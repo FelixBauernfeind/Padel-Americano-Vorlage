@@ -16,7 +16,7 @@ body {
 /* ===== HEADER ===== */
 .header {
   background:#f59e0b;
-  padding:14px 20px;   /* niedriger Header */
+  padding:14px 20px;
 }
 
 .header h1 {
@@ -24,7 +24,6 @@ body {
   font-size:26px;
   font-weight:600;
   color:white;
-  letter-spacing:0.3px;
 }
 
 .header p {
@@ -51,8 +50,10 @@ body {
 label {
   display:block;
   margin-bottom:6px;
+  font-weight:500;
 }
 
+/* ===== INPUTS ===== */
 input {
   padding:10px;
   font-size:15px;
@@ -60,56 +61,55 @@ input {
   border:1px solid #ccc;
 }
 
+/* ===== BUTTONS ===== */
 button {
-  width:100%;
-  padding:12px;
-  font-size:16px;
+  padding:10px 14px;
+  font-size:15px;
   background:#1d1d1f;
   color:white;
   border:none;
   border-radius:10px;
+  cursor:pointer;
+}
+
+button.secondary {
+  background:#e5e5ea;
+  color:#1d1d1f;
+}
+
+button.full {
+  width:100%;
   margin-top:14px;
 }
 
+/* ===== PLAYER COUNT ROW ===== */
+.player-count-row {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:18px;
+}
+
+#count {
+  width:70px;
+  text-align:center;
+}
+
+/* ===== PLAYER GRID ===== */
 .grid {
   display:grid;
   grid-template-columns: repeat(2, 1fr);
   gap:10px;
-  margin-top:18px;
 }
 
-/* 📱 Mobile Optimierung */
-@media (max-width: 600px) {
-  .grid {
-    grid-template-columns: 1fr;
-  }
-
-  .content {
-    padding:14px;
-  }
-
-  .section {
-    padding:14px;
-  }
-
-  input, button {
-    font-size:16px; /* bessere Touch-Größe */
-  }
-
-  .match {
-    grid-template-columns: 1fr 52px 20px 52px 1fr;
-    font-size:14px;
-  }
-}
-
-
+/* ===== ROUNDS ===== */
 .round {
   margin-bottom:26px;
 }
 
 .match {
   display:grid;
-  grid-template-columns: 1fr 60px 24px 60px 1fr;
+  grid-template-columns: 1fr 52px 22px 52px 1fr;
   align-items:center;
   text-align:center;
   gap:8px;
@@ -124,6 +124,7 @@ button {
   text-align:center;
 }
 
+/* ===== TABLE ===== */
 table {
   width:100%;
   border-collapse:collapse;
@@ -133,6 +134,21 @@ th, td {
   padding:8px;
   border-bottom:1px solid #ddd;
   text-align:left;
+}
+
+/* ===== MOBILE FINE-TUNING ===== */
+@media (max-width: 600px) {
+  .content {
+    padding:14px;
+  }
+
+  .section {
+    padding:14px;
+  }
+
+  .match {
+    font-size:14px;
+  }
 }
 </style>
 </head>
@@ -148,18 +164,23 @@ th, td {
 <div class="content">
 
   <div class="section">
-    <label><strong>Anzahl Spieler</strong></label>
-    <input type="number" id="count" value="8" min="4" style="margin-bottom:16px;">
+    <label>Anzahl Spieler</label>
+
+    <div class="player-count-row">
+      <input type="number" id="count" value="8" min="4">
+      <button class="secondary" onclick="setCount(8)">8</button>
+      <button class="secondary" onclick="setCount(16)">16</button>
+    </div>
 
     <div class="grid" id="players"></div>
 
-    <button onclick="createPlan()">Spielplan erstellen</button>
+    <button class="full" onclick="createPlan()">Spielplan erstellen</button>
   </div>
 
   <div id="plan"></div>
 
   <div class="section">
-    <button onclick="calculate()">🔢 Ergebnisse berechnen</button>
+    <button class="full" onclick="calculate()">🔢 Ergebnisse berechnen</button>
   </div>
 
   <div class="section">
@@ -171,6 +192,11 @@ th, td {
 
 <script>
 let scores = {};
+
+function setCount(n) {
+  document.getElementById("count").value = n;
+  renderPlayers();
+}
 
 function renderPlayers() {
   const div = document.getElementById("players");
