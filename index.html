@@ -78,6 +78,31 @@ button {
   margin-top:18px;
 }
 
+/* 📱 Mobile Optimierung */
+@media (max-width: 600px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .content {
+    padding:14px;
+  }
+
+  .section {
+    padding:14px;
+  }
+
+  input, button {
+    font-size:16px; /* bessere Touch-Größe */
+  }
+
+  .match {
+    grid-template-columns: 1fr 52px 20px 52px 1fr;
+    font-size:14px;
+  }
+}
+
+
 .round {
   margin-bottom:26px;
 }
