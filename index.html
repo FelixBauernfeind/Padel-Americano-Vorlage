@@ -100,103 +100,121 @@ th,td { padding:10px; border-bottom:1px solid #ddd; text-align:left; }
 <script>
 let stats = {};
 let playerNames = [];
+let scoreInputs = {}; // 🔑 NEU
 
 /* ===== STORAGE ===== */
 function saveState() {
+  document.querySelectorAll(".score").forEach(inp => {
+    if (inp.id) scoreInputs[inp.id] = inp.value;
+  });
+
   localStorage.setItem("americanoState", JSON.stringify({
     count: count.value,
     playerNames,
     plan: plan.innerHTML,
-    stats
+    stats,
+    scoreInputs
   }));
 }
 
 function loadState() {
-  const data = localStorage.getItem("americanoState");
-  if (!data) return;
+  const raw = localStorage.getItem("americanoState");
+  if (!raw) return;
 
-  const s = JSON.parse(data);
+  const s = JSON.parse(raw);
   count.value = s.count;
   playerNames = s.playerNames || [];
-  renderPlayers();
-
-  plan.innerHTML = s.plan || "";
   stats = s.stats || {};
-  updateRanking();
+  scoreInputs = s.scoreInputs || {};
 
-  // Scores wieder einlesen
-  document.querySelectorAll(".score").forEach(i => {
-    i.addEventListener("input", saveState);
+  renderPlayers();
+  plan.innerHTML = s.plan || "";
+
+  document.querySelectorAll(".score").forEach(inp => {
+    if (scoreInputs[inp.id] !== undefined) {
+      inp.value = scoreInputs[inp.id];
+    }
+    inp.addEventListener("input", saveState);
   });
+
+  updateRanking();
 }
 
-/* ===== SPIELERFELDER ===== */
+/* ===== SPIELER ===== */
 function renderPlayers() {
-  const div = players;
-  div.innerHTML = "";
-  const c = parseInt(count.value);
-
-  for (let i = 0; i < c; i++) {
+  players.innerHTML = "";
+  for (let i = 0; i < count.value; i++) {
     const val = playerNames[i] || "";
     playerNames[i] = val;
-    div.innerHTML += `<input value="${val}" 
-      oninput="playerNames[${i}]=this.value; saveState();" 
-      placeholder="Spieler ${i+1}">`;
+    players.innerHTML += `
+      <input value="${val}"
+        oninput="playerNames[${i}]=this.value; saveState();"
+        placeholder="Spieler ${i+1}">
+    `;
   }
   saveState();
 }
-
 count.onchange = renderPlayers;
 
 /* ===== SPIELPLAN ===== */
 function createPlan() {
-  plan.innerHTML="";
-  stats={};
+  plan.innerHTML = "";
+  stats = {};
+  scoreInputs = {};
 
-  const players = playerNames.filter(n=>n.trim());
-  players.forEach(p=>stats[p]={points:0,games:0});
+  const playersList = playerNames.filter(n => n.trim());
+  playersList.forEach(p => stats[p] = { points:0, games:0 });
 
-  const rounds = players.length - 1;
-  let rotation=[...players];
+  const rounds = playersList.length - 1;
+  let rotation = [...playersList];
 
-  for(let r=0;r<rounds;r++){
-    const round=document.createElement("div");
-    round.className="section";
-    round.innerHTML=`<strong>Runde ${r+1}</strong>`;
+  for (let r = 0; r < rounds; r++) {
+    const round = document.createElement("div");
+    round.className = "section";
+    round.innerHTML = `<strong>Runde ${r+1}</strong>`;
 
-    let active=[...rotation];
-    const pause=[];
-    while(active.length%4!==0) pause.push(active.pop());
+    let active = [...rotation];
+    const pause = [];
+    while (active.length % 4 !== 0) pause.push(active.pop());
 
-    for(let i=0;i<active.length;i+=4){
-      const A=[active[i],active[i+1]];
-      const B=[active[i+2],active[i+3]];
-      const m=document.createElement("div");
-      m.className="match";
-      m.dataset.teamA=A.join("|");
-      m.dataset.teamB=B.join("|");
-      m.innerHTML=`
+    let matchIndex = 0;
+    for (let i = 0; i < active.length; i += 4) {
+      const A = [active[i], active[i+1]];
+      const B = [active[i+2], active[i+3]];
+
+      const m = document.createElement("div");
+      m.className = "match";
+
+      const idA = `r${r}-m${matchIndex}-A`;
+      const idB = `r${r}-m${matchIndex}-B`;
+
+      m.dataset.teamA = A.join("|");
+      m.dataset.teamB = B.join("|");
+
+      m.innerHTML = `
         <div class="team">${A.join(" & ")}</div>
-        <input class="score scoreA" type="number">
+        <input class="score" id="${idA}" type="number">
         <div>:</div>
-        <input class="score scoreB" type="number">
-        <div class="team">${B.join(" & ")}</div>`;
+        <input class="score" id="${idB}" type="number">
+        <div class="team">${B.join(" & ")}</div>
+      `;
       round.appendChild(m);
+      matchIndex++;
     }
 
-    if(pause.length){
-      const p=document.createElement("div");
-      p.className="pause";
-      p.textContent=`Pause: ${pause.join(", ")}`;
+    if (pause.length) {
+      const p = document.createElement("div");
+      p.className = "pause";
+      p.textContent = `Pause: ${pause.join(", ")}`;
       round.appendChild(p);
     }
 
     plan.appendChild(round);
-    rotation.splice(1,0,rotation.pop());
+    rotation.splice(1, 0, rotation.pop());
   }
 
-  document.querySelectorAll(".score").forEach(i =>
-    i.addEventListener("input", saveState)
+  document.querySelectorAll(".score").forEach(inp =>
+    inp.addEventListener("input", saveState)
   );
 
   saveState();
@@ -204,42 +222,50 @@ function createPlan() {
 }
 
 /* ===== AUSWERTUNG ===== */
-function calculate(){
-  Object.values(stats).forEach(s=>{s.points=0;s.games=0;});
+function calculate() {
+  Object.values(stats).forEach(s => { s.points = 0; s.games = 0; });
 
-  document.querySelectorAll(".match").forEach(m=>{
-    const A=m.dataset.teamA.split("|");
-    const B=m.dataset.teamB.split("|");
-    const a=parseInt(m.querySelector(".scoreA").value);
-    const b=parseInt(m.querySelector(".scoreB").value);
-    if(!isNaN(a)) A.forEach(p=>{stats[p].points+=a;stats[p].games++;});
-    if(!isNaN(b)) B.forEach(p=>{stats[p].points+=b;stats[p].games++;});
+  document.querySelectorAll(".match").forEach(m => {
+    const A = m.dataset.teamA.split("|");
+    const B = m.dataset.teamB.split("|");
+
+    const a = parseInt(m.querySelectorAll(".score")[0].value);
+    const b = parseInt(m.querySelectorAll(".score")[1].value);
+
+    if (!isNaN(a)) A.forEach(p => { stats[p].points += a; stats[p].games++; });
+    if (!isNaN(b)) B.forEach(p => { stats[p].points += b; stats[p].games++; });
   });
 
   saveState();
   updateRanking();
 }
 
-function updateRanking(){
-  const rows=Object.entries(stats).map(([n,s])=>({
+function updateRanking() {
+  const rows = Object.entries(stats).map(([n,s]) => ({
     name:n,
     games:s.games,
     points:s.points,
-    ppg:(s.games?s.points/s.games:0).toFixed(2)
+    ppg:(s.games ? s.points/s.games : 0).toFixed(2)
   }));
 
-  rows.sort((a,b)=>b.ppg-a.ppg||b.points-a.points||a.name.localeCompare(b.name));
+  rows.sort((a,b)=>b.ppg-a.ppg || b.points-a.points || a.name.localeCompare(b.name));
 
-  ranking.innerHTML=`
-    <tr><th>Spieler</th><th>Spiele</th><th>Punkte</th><th>Punkte/Spiel</th></tr>`;
+  ranking.innerHTML = `
+    <tr><th>Spieler</th><th>Spiele</th><th>Punkte</th><th>Punkte/Spiel</th></tr>
+  `;
   rows.forEach(r=>{
-    ranking.innerHTML+=`<tr>
-      <td>${r.name}</td><td>${r.games}</td>
-      <td>${r.points}</td><td>${r.ppg}</td></tr>`;
+    ranking.innerHTML += `
+      <tr>
+        <td>${r.name}</td>
+        <td>${r.games}</td>
+        <td>${r.points}</td>
+        <td>${r.ppg}</td>
+      </tr>
+    `;
   });
 }
 
-/* ===== INIT ===== */
+/* INIT */
 loadState();
 if (!count.value) {
   count.value = 8;
