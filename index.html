@@ -6,114 +6,24 @@
 <title>Americano Vorlage – Padelzone</title>
 
 <style>
-* { box-sizing: border-box; }
-
-body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI";
-  background:#f5f5f7;
-  margin:0;
-  padding:0;
-}
-
-/* HEADER */
-.header {
-  background:#f59e0b;
-  padding:14px 20px;
-}
-.header h1 {
-  margin:0;
-  font-size:26px;
-  color:white;
-}
-.header p {
-  margin:4px 0 0 0;
-  font-size:15px;
-  color:white;
-  opacity:0.95;
-}
-
-/* CONTENT */
-.content {
-  padding:20px;
-  max-width:1200px;
-  margin:0 auto;
-}
-.section {
-  background:white;
-  border-radius:14px;
-  padding:18px;
-  margin-bottom:22px;
-}
-
-label {
-  display:block;
-  margin-bottom:8px;
-  font-weight:500;
-}
-
-input {
-  width:100%;
-  padding:10px;
-  font-size:15px;
-  border-radius:8px;
-  border:1px solid #ccc;
-}
-
-#count {
-  max-width:80px;
-  margin-bottom:22px;
-}
-
-button {
-  width:100%;
-  padding:12px;
-  font-size:16px;
-  background:#1d1d1f;
-  color:white;
-  border:none;
-  border-radius:10px;
-  margin-top:14px;
-}
-
-/* PLAYER GRID */
-.grid {
-  display:grid;
-  grid-template-columns: repeat(2, minmax(0,1fr));
-  gap:10px;
-}
-
-/* MATCHES */
+* { box-sizing:border-box; }
+body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI"; background:#f5f5f7; margin:0; }
+.header { background:#f59e0b; padding:14px 20px; }
+.header h1 { margin:0; color:white; font-size:26px; }
+.header p { margin:4px 0 0; color:white; opacity:.95; }
+.content { padding:20px; max-width:1200px; margin:auto; }
+.section { background:white; border-radius:14px; padding:18px; margin-bottom:22px; }
+label { display:block; margin-bottom:8px; font-weight:500; }
+input { width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; }
+#count { max-width:80px; margin-bottom:22px; }
+.grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+button { width:100%; padding:12px; border:none; border-radius:10px; background:#1d1d1f; color:white; margin-top:14px; }
 .round { margin-bottom:26px; }
-
-.match {
-  display:grid;
-  grid-template-columns: 1fr 52px 22px 52px 1fr;
-  align-items:center;
-  text-align:center;
-  gap:8px;
-  margin-top:12px;
-}
-
+.match { display:grid; grid-template-columns:1fr 52px 22px 52px 1fr; align-items:center; gap:8px; margin-top:12px; text-align:center; }
 .team { font-weight:500; }
-.score { text-align:center; }
-
-.pause {
-  margin-top:10px;
-  font-size:14px;
-  color:#666;
-  font-style:italic;
-}
-
-/* TABLE */
-table {
-  width:100%;
-  border-collapse:collapse;
-}
-th, td {
-  padding:8px;
-  border-bottom:1px solid #ddd;
-  text-align:left;
-}
+.pause { margin-top:10px; font-size:14px; font-style:italic; color:#666; }
+table { width:100%; border-collapse:collapse; }
+th,td { padding:8px; border-bottom:1px solid #ddd; text-align:left; }
 </style>
 </head>
 
@@ -126,183 +36,101 @@ th, td {
 
 <div class="content">
 
-  <div class="section">
-    <label>Anzahl Spieler</label>
-    <input type="number" id="count" value="8" min="4">
+<div class="section">
+  <label>Anzahl Spieler</label>
+  <input type="number" id="count" value="8" min="4">
+  <div class="grid" id="players"></div>
+  <button onclick="createPlan()">Spielplan erstellen</button>
+</div>
 
-    <div class="grid" id="players"></div>
+<div id="plan"></div>
 
-    <button onclick="createPlan()">Spielplan erstellen</button>
-  </div>
+<div class="section">
+  <button onclick="calculate()">🔢 Ergebnisse berechnen</button>
+</div>
 
-  <div id="plan"></div>
-
-  <div class="section">
-    <button onclick="calculate()">🔢 Ergebnisse berechnen</button>
-  </div>
-
-  <div class="section">
-    <h2>Rangliste</h2>
-    <table id="ranking"></table>
-  </div>
+<div class="section">
+  <h2>Rangliste</h2>
+  <table id="ranking"></table>
+</div>
 
 </div>
 
 <script>
-let scores = {};
+let scores={};
 
-function renderPlayers() {
-  const div = document.getElementById("players");
-  div.innerHTML = "";
-  const count = parseInt(document.getElementById("count").value);
-  for (let i = 1; i <= count; i++) {
-    div.innerHTML += `<input id="p${i}" placeholder="Spieler ${i}">`;
-  }
+function renderPlayers(){
+  const d=document.getElementById("players");
+  d.innerHTML="";
+  for(let i=1;i<=count.value;i++) d.innerHTML+=`<input id="p${i}" placeholder="Spieler ${i}">`;
 }
-document.getElementById("count").onchange = renderPlayers;
-renderPlayers();
+count.onchange=renderPlayers; renderPlayers();
 
-/* ===== AMERICANO LOGIK ===== */
-function generateAmericano(players) {
-  const rounds = [];
-  const usedPartners = new Set();
-  let byeIndex = 0;
-
-  const pairKey = (a,b) => [a,b].sort().join("|");
-
-  const totalRounds = players.length % 2 === 0
-    ? players.length - 1
-    : players.length;
-
-  for (let r = 0; r < totalRounds; r++) {
-    let available = [...players];
-    let bye = null;
-
-    if (available.length % 2 === 1) {
-      bye = available.splice(byeIndex % available.length, 1)[0];
-      byeIndex++;
-    }
-
-    const matches = [];
-
-    while (available.length >= 4) {
-      let found = false;
-
-      for (let i = 0; i < available.length && !found; i++) {
-        for (let j = i+1; j < available.length && !found; j++) {
-          const p1 = available[i], p2 = available[j];
-          if (usedPartners.has(pairKey(p1,p2))) continue;
-
-          for (let k = 0; k < available.length && !found; k++) {
-            if (k === i || k === j) continue;
-            for (let l = k+1; l < available.length && !found; l++) {
-              if (l === i || l === j) continue;
-
-              const p3 = available[k], p4 = available[l];
-              if (usedPartners.has(pairKey(p3,p4))) continue;
-
-              matches.push({
-                teamA: [p1,p2],
-                teamB: [p3,p4]
-              });
-
-              usedPartners.add(pairKey(p1,p2));
-              usedPartners.add(pairKey(p3,p4));
-
-              available = available.filter(p =>
-                ![p1,p2,p3,p4].includes(p)
-              );
-              found = true;
-            }
-          }
-        }
-      }
-
-      if (!found) break;
-    }
-
-    rounds.push({ matches, bye });
+function createPlan(){
+  plan.innerHTML=""; scores={};
+  const players=[];
+  for(let i=1;i<=count.value;i++){
+    const n=document.getElementById("p"+i).value.trim();
+    if(n){ players.push(n); scores[n]=0; }
   }
 
-  return rounds;
-}
+  const rounds = Math.ceil((players.length-1));
+  let rotation=[...players];
 
-/* ===== PLAN ===== */
-function createPlan() {
-  document.getElementById("plan").innerHTML = "";
-  scores = {};
+  for(let r=0;r<rounds;r++){
+    const round=document.createElement("div");
+    round.className="section round";
+    round.innerHTML=`<strong>Runde ${r+1}</strong>`;
 
-  const count = parseInt(document.getElementById("count").value);
-  const players = [];
+    let active=[...rotation];
+    const pause=[];
+    while(active.length%4!==0) pause.push(active.pop());
 
-  for (let i = 1; i <= count; i++) {
-    const name = document.getElementById("p"+i).value.trim();
-    if (name) {
-      players.push(name);
-      scores[name] = 0;
-    }
-  }
-
-  const rounds = generateAmericano(players);
-
-  rounds.forEach((r, idx) => {
-    const div = document.createElement("div");
-    div.className = "section round";
-    div.innerHTML = `<strong>Runde ${idx+1}</strong>`;
-
-    r.matches.forEach(m => {
-      const match = document.createElement("div");
-      match.className = "match";
-      match.dataset.teamA = m.teamA.join("|");
-      match.dataset.teamB = m.teamB.join("|");
-
-      match.innerHTML = `
-        <div class="team">${m.teamA.join(" & ")}</div>
-        <input type="number" class="score scoreA">
+    for(let i=0;i<active.length;i+=4){
+      const A=[active[i],active[i+1]];
+      const B=[active[i+2],active[i+3]];
+      const m=document.createElement("div");
+      m.className="match";
+      m.dataset.teamA=A.join("|");
+      m.dataset.teamB=B.join("|");
+      m.innerHTML=`
+        <div class="team">${A.join(" & ")}</div>
+        <input class="score scoreA" type="number">
         <div>:</div>
-        <input type="number" class="score scoreB">
-        <div class="team">${m.teamB.join(" & ")}</div>
-      `;
-      div.appendChild(match);
-    });
-
-    if (r.bye) {
-      const p = document.createElement("div");
-      p.className = "pause";
-      p.textContent = `Pause: ${r.bye}`;
-      div.appendChild(p);
+        <input class="score scoreB" type="number">
+        <div class="team">${B.join(" & ")}</div>`;
+      round.appendChild(m);
     }
 
-    document.getElementById("plan").appendChild(div);
-  });
+    if(pause.length){
+      const p=document.createElement("div");
+      p.className="pause";
+      p.textContent=`Pause: ${pause.join(", ")}`;
+      round.appendChild(p);
+    }
 
+    plan.appendChild(round);
+    rotation.splice(1,0,rotation.pop());
+  }
   updateRanking();
 }
 
-/* ===== AUSWERTUNG ===== */
-function calculate() {
-  Object.keys(scores).forEach(p => scores[p] = 0);
-
-  document.querySelectorAll(".match").forEach(match => {
-    const A = match.dataset.teamA.split("|");
-    const B = match.dataset.teamB.split("|");
-    const a = parseInt(match.querySelector(".scoreA").value);
-    const b = parseInt(match.querySelector(".scoreB").value);
-
-    if (!isNaN(a)) A.forEach(p => scores[p] += a);
-    if (!isNaN(b)) B.forEach(p => scores[p] += b);
+function calculate(){
+  Object.keys(scores).forEach(p=>scores[p]=0);
+  document.querySelectorAll(".match").forEach(m=>{
+    const A=m.dataset.teamA.split("|"), B=m.dataset.teamB.split("|");
+    const a=parseInt(m.querySelector(".scoreA").value);
+    const b=parseInt(m.querySelector(".scoreB").value);
+    if(!isNaN(a)) A.forEach(p=>scores[p]+=a);
+    if(!isNaN(b)) B.forEach(p=>scores[p]+=b);
   });
-
   updateRanking();
 }
 
-function updateRanking() {
-  const table = document.getElementById("ranking");
-  const sorted = Object.entries(scores).sort((a,b)=>b[1]-a[1]);
-  table.innerHTML = "<tr><th>Spieler</th><th>Punkte</th></tr>";
-  sorted.forEach(([n,p]) => {
-    table.innerHTML += `<tr><td>${n}</td><td>${p}</td></tr>`;
-  });
+function updateRanking(){
+  ranking.innerHTML="<tr><th>Spieler</th><th>Punkte</th></tr>";
+  Object.entries(scores).sort((a,b)=>b[1]-a[1])
+    .forEach(([n,p])=>ranking.innerHTML+=`<tr><td>${n}</td><td>${p}</td></tr>`);
 }
 </script>
 
