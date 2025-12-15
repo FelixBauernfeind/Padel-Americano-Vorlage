@@ -270,18 +270,22 @@ function createPlan() {
 
   playersList.forEach(p => stats[p] = { points: 0, games: 0 });
 
-  const rounds = n; // bei 9 Spielern → 9 Runden
+  const rounds = n; // faire Rotation
+
+  // Startreihenfolge
+  let rotation = [...playersList];
 
   for (let r = 0; r < rounds; r++) {
     const round = document.createElement("div");
     round.className = "section";
     round.innerHTML = `<strong>Runde ${r + 1}</strong>`;
 
-    // 👉 genau ein fixer Pausenspieler pro Runde
-    const pausePlayer = playersList[r % n];
+    // 👉 wie viele können spielen
+    const playableCount = Math.floor(rotation.length / 4) * 4;
 
-    // aktive Spieler = alle außer Pause
-    const active = playersList.filter(p => p !== pausePlayer);
+    // aktive & Pause
+    const active = rotation.slice(0, playableCount);
+    const pause = rotation.slice(playableCount);
 
     // mischen für Partnerwechsel
     const shuffled = [...active].sort(() => Math.random() - 0.5);
@@ -312,12 +316,18 @@ function createPlan() {
       matchIndex++;
     }
 
-    const pause = document.createElement("div");
-    pause.className = "pause";
-    pause.textContent = `Pause: ${pausePlayer}`;
-    round.appendChild(pause);
+    // 👉 ALLE Pausierenden anzeigen
+    if (pause.length) {
+      const p = document.createElement("div");
+      p.className = "pause";
+      p.textContent = `Pause: ${pause.join(", ")}`;
+      round.appendChild(p);
+    }
 
     plan.appendChild(round);
+
+    // 🔁 Rotation für nächste Runde
+    rotation.push(rotation.shift());
   }
 
   document.querySelectorAll(".score").forEach(inp => {
@@ -330,6 +340,7 @@ function createPlan() {
   saveState();
   updateRanking();
 }
+
 
 
 /* ===== CALC ===== */
