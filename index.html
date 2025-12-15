@@ -13,71 +13,71 @@ body {
   background:#f5f5f7;
   margin:0;
   padding:0;
-  font-size:15px;
+  font-size:16px; /* 🔤 größer für Mac */
 }
 
 /* ===== HEADER ===== */
 .header {
   background:#f59e0b;
-  padding:14px 20px;
+  padding:16px 22px;
 }
 .header h1 {
   margin:0;
-  font-size:26px;
+  font-size:28px;
   font-weight:600;
   color:white;
 }
 .header p {
-  margin:4px 0 0 0;
-  font-size:15px;
+  margin:6px 0 0 0;
+  font-size:16px;
   color:white;
   opacity:0.95;
 }
 
 /* ===== CONTENT ===== */
 .content {
-  padding:20px;
+  padding:22px;
   max-width:1200px;
   margin:0 auto;
 }
 
 .section {
   background:white;
-  border-radius:14px;
-  padding:18px;
-  margin-bottom:22px;
+  border-radius:16px;
+  padding:20px;
+  margin-bottom:24px;
 }
 
 label {
   display:block;
-  margin-bottom:8px;
+  margin-bottom:10px;
   font-weight:500;
 }
 
 /* ===== INPUTS ===== */
 input {
   width:100%;
-  padding:10px;
-  font-size:15px;
-  border-radius:8px;
+  padding:12px;
+  font-size:16px;
+  border-radius:10px;
   border:1px solid #ccc;
 }
 
 #count {
-  max-width:80px;
-  margin-bottom:24px; /* Luft unter Anzahl Spieler */
+  max-width:90px;
+  margin-bottom:26px;
 }
 
 /* ===== BUTTONS ===== */
 button {
   width:100%;
-  padding:12px;
-  font-size:16px;
+  padding:14px;
+  font-size:17px;
   background:#1d1d1f;
   color:white;
   border:none;
-  border-radius:10px;
-  margin-top:14px;
+  border-radius:12px;
+  margin-top:16px;
   cursor:pointer;
 }
 
@@ -85,35 +85,27 @@ button {
 .grid {
   display:grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap:10px;
-  width:100%;
+  gap:12px;
 }
 
-/* ===== ROUNDS / MATCHES ===== */
-.round {
-  margin-bottom:26px;
-}
+/* ===== ROUNDS ===== */
+.round { margin-bottom:28px; }
 
 .match {
   display:grid;
-  grid-template-columns: 1fr 52px 22px 52px 1fr;
+  grid-template-columns: 1fr 56px 24px 56px 1fr;
   align-items:center;
   text-align:center;
-  gap:8px;
-  margin-top:12px;
+  gap:10px;
+  margin-top:14px;
 }
 
-.team {
-  font-weight:500;
-}
-
-.score {
-  text-align:center;
-}
+.team { font-weight:500; }
+.score { text-align:center; }
 
 .pause {
-  margin-top:10px;
-  font-size:14px;
+  margin-top:12px;
+  font-size:15px;
   font-style:italic;
   color:#666;
 }
@@ -122,43 +114,44 @@ button {
 table {
   width:100%;
   border-collapse:collapse;
+  font-size:15px;
 }
 
 th, td {
-  padding:8px;
+  padding:10px;
   border-bottom:1px solid #ddd;
   text-align:left;
 }
 
-/* ===== MOBILE OPTIMIERUNG ===== */
+/* ===== MOBILE ===== */
 @media (max-width: 600px) {
   body {
-    font-size:16px;
+    font-size:17px;
   }
 
   .content {
-    padding:14px;
+    padding:16px;
   }
 
   .section {
-    padding:14px;
+    padding:16px;
   }
 
   input {
-    font-size:16px; /* verhindert iOS-Zoom */
+    font-size:17px;
   }
 
   button {
-    font-size:17px;
-    padding:14px;
-  }
-
-  h1 {
-    font-size:24px;
+    font-size:18px;
+    padding:16px;
   }
 
   .match {
-    font-size:15px;
+    font-size:16px;
+  }
+
+  table {
+    font-size:16px;
   }
 }
 </style>
@@ -196,7 +189,7 @@ th, td {
 </div>
 
 <script>
-let scores = {};
+let stats = {}; // { name: { points, games } }
 
 /* ===== SPIELERFELDER ===== */
 function renderPlayers() {
@@ -207,14 +200,13 @@ function renderPlayers() {
     div.innerHTML += `<input id="p${i}" placeholder="Spieler ${i}">`;
   }
 }
-
-document.getElementById("count").onchange = renderPlayers;
+count.onchange = renderPlayers;
 renderPlayers();
 
 /* ===== SPIELPLAN ===== */
 function createPlan() {
-  document.getElementById("plan").innerHTML = "";
-  scores = {};
+  plan.innerHTML = "";
+  stats = {};
 
   const count = parseInt(document.getElementById("count").value);
   const players = [];
@@ -223,7 +215,7 @@ function createPlan() {
     const name = document.getElementById("p" + i).value.trim();
     if (name) {
       players.push(name);
-      scores[name] = 0;
+      stats[name] = { points: 0, games: 0 };
     }
   }
 
@@ -262,16 +254,14 @@ function createPlan() {
       round.appendChild(match);
     }
 
-    if (pause.length > 0) {
+    if (pause.length) {
       const p = document.createElement("div");
       p.className = "pause";
       p.textContent = `Pause: ${pause.join(", ")}`;
       round.appendChild(p);
     }
 
-    document.getElementById("plan").appendChild(round);
-
-    /* Rotation */
+    plan.appendChild(round);
     rotation.splice(1, 0, rotation.pop());
   }
 
@@ -280,17 +270,31 @@ function createPlan() {
 
 /* ===== AUSWERTUNG ===== */
 function calculate() {
-  Object.keys(scores).forEach(p => scores[p] = 0);
+  Object.values(stats).forEach(s => {
+    s.points = 0;
+    s.games = 0;
+  });
 
   document.querySelectorAll(".match").forEach(match => {
-    const teamA = match.dataset.teamA.split("|");
-    const teamB = match.dataset.teamB.split("|");
+    const A = match.dataset.teamA.split("|");
+    const B = match.dataset.teamB.split("|");
 
     const a = parseInt(match.querySelector(".scoreA").value);
     const b = parseInt(match.querySelector(".scoreB").value);
 
-    if (!isNaN(a)) teamA.forEach(p => scores[p] += a);
-    if (!isNaN(b)) teamB.forEach(p => scores[p] += b);
+    if (!isNaN(a)) {
+      A.forEach(p => {
+        stats[p].points += a;
+        stats[p].games += 1;
+      });
+    }
+
+    if (!isNaN(b)) {
+      B.forEach(p => {
+        stats[p].points += b;
+        stats[p].games += 1;
+      });
+    }
   });
 
   updateRanking();
@@ -298,11 +302,36 @@ function calculate() {
 
 function updateRanking() {
   const table = document.getElementById("ranking");
-  const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
 
-  table.innerHTML = "<tr><th>Spieler</th><th>Punkte</th></tr>";
-  sorted.forEach(([name, pts]) => {
-    table.innerHTML += `<tr><td>${name}</td><td>${pts}</td></tr>`;
+  const rows = Object.entries(stats).map(([name, s]) => ({
+    name,
+    games: s.games,
+    points: s.points,
+    ppg: s.games ? (s.points / s.games).toFixed(2) : "0.00"
+  }));
+
+  rows.sort((a, b) => 
+    b.ppg - a.ppg || b.points - a.points || a.name.localeCompare(b.name)
+  );
+
+  table.innerHTML = `
+    <tr>
+      <th>Spieler</th>
+      <th>Spiele</th>
+      <th>Punkte</th>
+      <th>Punkte / Spiel</th>
+    </tr>
+  `;
+
+  rows.forEach(r => {
+    table.innerHTML += `
+      <tr>
+        <td>${r.name}</td>
+        <td>${r.games}</td>
+        <td>${r.points}</td>
+        <td>${r.ppg}</td>
+      </tr>
+    `;
   });
 }
 </script>
