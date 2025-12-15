@@ -264,27 +264,33 @@ function createPlan() {
   scoreInputs = {};
 
   const playersList = playerNames.filter(n => n.trim());
-  playersList.forEach(p => stats[p] = { points:0, games:0 });
+  const n = playersList.length;
 
-  const rounds = playersList.length % 2 === 0
-    ? playersList.length - 1
-    : playersList.length;
+  if (n < 4) return;
 
-  let rotation = [...playersList];
+  playersList.forEach(p => stats[p] = { points: 0, games: 0 });
+
+  const rounds = n; // bei 9 Spielern → 9 Runden
 
   for (let r = 0; r < rounds; r++) {
     const round = document.createElement("div");
     round.className = "section";
-    round.innerHTML = `<strong>Runde ${r+1}</strong>`;
+    round.innerHTML = `<strong>Runde ${r + 1}</strong>`;
 
-    let active = [...rotation];
-    const pause = [];
-    while (active.length % 4 !== 0) pause.push(active.pop());
+    // 👉 genau ein fixer Pausenspieler pro Runde
+    const pausePlayer = playersList[r % n];
+
+    // aktive Spieler = alle außer Pause
+    const active = playersList.filter(p => p !== pausePlayer);
+
+    // mischen für Partnerwechsel
+    const shuffled = [...active].sort(() => Math.random() - 0.5);
 
     let matchIndex = 0;
-    for (let i = 0; i < active.length; i += 4) {
-      const A = [active[i], active[i+1]];
-      const B = [active[i+2], active[i+3]];
+
+    for (let i = 0; i < shuffled.length; i += 4) {
+      const A = [shuffled[i], shuffled[i + 1]];
+      const B = [shuffled[i + 2], shuffled[i + 3]];
 
       const idA = `r${r}-m${matchIndex}-A`;
       const idB = `r${r}-m${matchIndex}-B`;
@@ -301,25 +307,17 @@ function createPlan() {
         <input class="score" id="${idB}" type="number">
         <div class="team">${B.join(" & ")}</div>
       `;
+
       round.appendChild(m);
       matchIndex++;
     }
 
-    if (pause.length) {
-      const p = document.createElement("div");
-      p.className = "pause";
-      p.textContent = `Pause: ${pause.join(", ")}`;
-      round.appendChild(p);
-    }
+    const pause = document.createElement("div");
+    pause.className = "pause";
+    pause.textContent = `Pause: ${pausePlayer}`;
+    round.appendChild(pause);
 
     plan.appendChild(round);
-
-    /* Rotation: stabil + Durchmischung */
-    if (r % 2 === 1) {
-      rotation.sort(() => Math.random() - 0.5);
-    } else {
-      rotation.splice(1, 0, rotation.pop());
-    }
   }
 
   document.querySelectorAll(".score").forEach(inp => {
@@ -332,6 +330,7 @@ function createPlan() {
   saveState();
   updateRanking();
 }
+
 
 /* ===== CALC ===== */
 function calculate() {
