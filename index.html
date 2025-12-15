@@ -7,15 +7,12 @@
 
 <style>
 * { box-sizing: border-box; }
-
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI";
   background:#f5f5f7;
   margin:0;
   font-size:16px;
 }
-
-/* HEADER */
 .header {
   background:#f59e0b;
   padding:16px 22px;
@@ -23,7 +20,6 @@ body {
 .header h1 { margin:0; font-size:28px; color:white; }
 .header p { margin:6px 0 0; font-size:16px; color:white; opacity:.95; }
 
-/* CONTENT */
 .content { padding:22px; max-width:1200px; margin:auto; }
 .section { background:white; border-radius:16px; padding:20px; margin-bottom:24px; }
 label { display:block; margin-bottom:10px; font-weight:500; }
@@ -49,14 +45,12 @@ button {
   margin-top:16px;
 }
 
-/* GRID */
 .grid {
   display:grid;
   grid-template-columns:repeat(2,minmax(0,1fr));
   gap:12px;
 }
 
-/* MATCHES */
 .match {
   display:grid;
   grid-template-columns:1fr 56px 24px 56px 1fr;
@@ -65,10 +59,10 @@ button {
   gap:10px;
   margin-top:14px;
 }
+
 .team { font-weight:500; }
 .pause { margin-top:12px; font-size:15px; font-style:italic; color:#666; }
 
-/* TABLE */
 table { width:100%; border-collapse:collapse; }
 th,td { padding:10px; border-bottom:1px solid #ddd; text-align:left; }
 </style>
@@ -85,7 +79,7 @@ th,td { padding:10px; border-bottom:1px solid #ddd; text-align:left; }
 
 <div class="section">
   <label>Anzahl Spieler</label>
-  <input type="number" id="count" value="8" min="4">
+  <input type="number" id="count" min="4">
   <div class="grid" id="players"></div>
   <button onclick="createPlan()">Spielplan erstellen</button>
 </div>
@@ -107,28 +101,54 @@ th,td { padding:10px; border-bottom:1px solid #ddd; text-align:left; }
 let stats = {};
 let playerNames = [];
 
-/* SPIELERFELDER */
+/* ===== STORAGE ===== */
+function saveState() {
+  localStorage.setItem("americanoState", JSON.stringify({
+    count: count.value,
+    playerNames,
+    plan: plan.innerHTML,
+    stats
+  }));
+}
+
+function loadState() {
+  const data = localStorage.getItem("americanoState");
+  if (!data) return;
+
+  const s = JSON.parse(data);
+  count.value = s.count;
+  playerNames = s.playerNames || [];
+  renderPlayers();
+
+  plan.innerHTML = s.plan || "";
+  stats = s.stats || {};
+  updateRanking();
+
+  // Scores wieder einlesen
+  document.querySelectorAll(".score").forEach(i => {
+    i.addEventListener("input", saveState);
+  });
+}
+
+/* ===== SPIELERFELDER ===== */
 function renderPlayers() {
-  const div = document.getElementById("players");
-  const count = parseInt(document.getElementById("count").value);
-
-  // alte Namen merken
-  const old = [...playerNames];
-  playerNames = [];
-
+  const div = players;
   div.innerHTML = "";
-  for (let i = 0; i < count; i++) {
-    const val = old[i] || "";
-    playerNames.push(val);
+  const c = parseInt(count.value);
+
+  for (let i = 0; i < c; i++) {
+    const val = playerNames[i] || "";
+    playerNames[i] = val;
     div.innerHTML += `<input value="${val}" 
-      oninput="playerNames[${i}]=this.value" 
+      oninput="playerNames[${i}]=this.value; saveState();" 
       placeholder="Spieler ${i+1}">`;
   }
+  saveState();
 }
-count.onchange = renderPlayers;
-renderPlayers();
 
-/* SPIELPLAN */
+count.onchange = renderPlayers;
+
+/* ===== SPIELPLAN ===== */
 function createPlan() {
   plan.innerHTML="";
   stats={};
@@ -174,12 +194,19 @@ function createPlan() {
     plan.appendChild(round);
     rotation.splice(1,0,rotation.pop());
   }
+
+  document.querySelectorAll(".score").forEach(i =>
+    i.addEventListener("input", saveState)
+  );
+
+  saveState();
   updateRanking();
 }
 
-/* AUSWERTUNG */
+/* ===== AUSWERTUNG ===== */
 function calculate(){
   Object.values(stats).forEach(s=>{s.points=0;s.games=0;});
+
   document.querySelectorAll(".match").forEach(m=>{
     const A=m.dataset.teamA.split("|");
     const B=m.dataset.teamB.split("|");
@@ -188,12 +215,16 @@ function calculate(){
     if(!isNaN(a)) A.forEach(p=>{stats[p].points+=a;stats[p].games++;});
     if(!isNaN(b)) B.forEach(p=>{stats[p].points+=b;stats[p].games++;});
   });
+
+  saveState();
   updateRanking();
 }
 
 function updateRanking(){
   const rows=Object.entries(stats).map(([n,s])=>({
-    name:n,games:s.games,points:s.points,
+    name:n,
+    games:s.games,
+    points:s.points,
     ppg:(s.games?s.points/s.games:0).toFixed(2)
   }));
 
@@ -206,6 +237,13 @@ function updateRanking(){
       <td>${r.name}</td><td>${r.games}</td>
       <td>${r.points}</td><td>${r.ppg}</td></tr>`;
   });
+}
+
+/* ===== INIT ===== */
+loadState();
+if (!count.value) {
+  count.value = 8;
+  renderPlayers();
 }
 </script>
 
