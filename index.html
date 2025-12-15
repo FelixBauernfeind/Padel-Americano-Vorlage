@@ -210,7 +210,12 @@ function createPlan() {
     }
 
     plan.appendChild(round);
-    rotation.splice(1, 0, rotation.pop());
+    if (r % 2 === 1) {
+  rotation.sort(() => Math.random() - 0.5);
+} else {
+  rotation.splice(1, 0, rotation.pop());
+}
+
   }
 
   document.querySelectorAll(".score").forEach(inp =>
