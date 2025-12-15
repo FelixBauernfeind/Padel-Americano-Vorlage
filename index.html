@@ -7,23 +7,52 @@
 
 <style>
 * { box-sizing: border-box; }
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI";
   background:#f5f5f7;
   margin:0;
   font-size:16px;
 }
+
+/* ===== HEADER ===== */
 .header {
   background:#f59e0b;
   padding:16px 22px;
 }
-.header h1 { margin:0; font-size:28px; color:white; }
-.header p { margin:6px 0 0; font-size:16px; color:white; opacity:.95; }
+.header h1 {
+  margin:0;
+  font-size:28px;
+  color:white;
+}
+.header p {
+  margin:6px 0 0;
+  font-size:16px;
+  color:white;
+  opacity:.95;
+}
 
-.content { padding:22px; max-width:1200px; margin:auto; }
-.section { background:white; border-radius:16px; padding:20px; margin-bottom:24px; }
-label { display:block; margin-bottom:10px; font-weight:500; }
+/* ===== CONTENT ===== */
+.content {
+  padding:22px;
+  max-width:1200px;
+  margin:auto;
+}
 
+.section {
+  background:white;
+  border-radius:16px;
+  padding:20px;
+  margin-bottom:24px;
+}
+
+label {
+  display:block;
+  margin-bottom:10px;
+  font-weight:500;
+}
+
+/* ===== INPUTS ===== */
 input {
   width:100%;
   padding:12px;
@@ -32,9 +61,35 @@ input {
   border:1px solid #ccc;
 }
 
-#count { max-width:90px; margin-bottom:26px; }
+/* ===== COUNT + TRASH ===== */
+.count-row {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin-bottom:26px;
+}
 
-button {
+#count {
+  max-width:90px;
+}
+
+/* Apple-like Trash Button */
+.trash {
+  width:44px;
+  height:44px;
+  border-radius:12px;
+  border:1px solid #ddd;
+  background:#f5f5f7;
+  font-size:20px;
+  cursor:pointer;
+}
+.trash:hover {
+  background:#ffe4e4;
+  border-color:#ffb3b3;
+}
+
+/* ===== BUTTONS ===== */
+button.primary {
   width:100%;
   padding:14px;
   font-size:17px;
@@ -43,14 +98,17 @@ button {
   border:none;
   border-radius:12px;
   margin-top:16px;
+  cursor:pointer;
 }
 
+/* ===== PLAYER GRID ===== */
 .grid {
   display:grid;
   grid-template-columns:repeat(2,minmax(0,1fr));
   gap:12px;
 }
 
+/* ===== MATCHES ===== */
 .match {
   display:grid;
   grid-template-columns:1fr 56px 24px 56px 1fr;
@@ -61,10 +119,31 @@ button {
 }
 
 .team { font-weight:500; }
-.pause { margin-top:12px; font-size:15px; font-style:italic; color:#666; }
 
-table { width:100%; border-collapse:collapse; }
-th,td { padding:10px; border-bottom:1px solid #ddd; text-align:left; }
+.pause {
+  margin-top:12px;
+  font-size:15px;
+  font-style:italic;
+  color:#666;
+}
+
+/* ===== TABLE ===== */
+table {
+  width:100%;
+  border-collapse:collapse;
+}
+th, td {
+  padding:10px;
+  border-bottom:1px solid #ddd;
+  text-align:left;
+}
+
+/* ===== MOBILE ===== */
+@media (max-width:600px){
+  body { font-size:17px; }
+  input { font-size:17px; }
+  button.primary { font-size:18px; padding:16px; }
+}
 </style>
 </head>
 
@@ -77,30 +156,42 @@ th,td { padding:10px; border-bottom:1px solid #ddd; text-align:left; }
 
 <div class="content">
 
-<div class="section">
-  <label>Anzahl Spieler</label>
-  <input type="number" id="count" min="4">
-  <div class="grid" id="players"></div>
-  <button onclick="createPlan()">Spielplan erstellen</button>
-</div>
+  <div class="section">
+    <label>Anzahl Spieler</label>
 
-<div id="plan"></div>
+    <div class="count-row">
+      <input type="number" id="count" min="4">
+      <button class="trash" onclick="resetTournament()" title="Neues Turnier">
+        🗑
+      </button>
+    </div>
 
-<div class="section">
-  <button onclick="calculate()">🔢 Ergebnisse berechnen</button>
-</div>
+    <div class="grid" id="players"></div>
 
-<div class="section">
-  <h2>Rangliste</h2>
-  <table id="ranking"></table>
-</div>
+    <button class="primary" onclick="createPlan()">
+      Spielplan erstellen
+    </button>
+  </div>
+
+  <div id="plan"></div>
+
+  <div class="section">
+    <button class="primary" onclick="calculate()">
+      🔢 Ergebnisse berechnen
+    </button>
+  </div>
+
+  <div class="section">
+    <h2>Rangliste</h2>
+    <table id="ranking"></table>
+  </div>
 
 </div>
 
 <script>
-let stats = {};
 let playerNames = [];
-let scoreInputs = {}; // 🔑 NEU
+let stats = {};
+let scoreInputs = {};
 
 /* ===== STORAGE ===== */
 function saveState() {
@@ -111,8 +202,6 @@ function saveState() {
   localStorage.setItem("americanoState", JSON.stringify({
     count: count.value,
     playerNames,
-    plan: plan.innerHTML,
-    stats,
     scoreInputs
   }));
 }
@@ -122,41 +211,51 @@ function loadState() {
   if (!raw) return;
 
   const s = JSON.parse(raw);
-  count.value = s.count;
+  count.value = s.count || 8;
   playerNames = s.playerNames || [];
-  stats = s.stats || {};
   scoreInputs = s.scoreInputs || {};
 
   renderPlayers();
-  plan.innerHTML = s.plan || "";
-
-  document.querySelectorAll(".score").forEach(inp => {
-    if (scoreInputs[inp.id] !== undefined) {
-      inp.value = scoreInputs[inp.id];
-    }
-    inp.addEventListener("input", saveState);
-  });
-
-  updateRanking();
 }
 
-/* ===== SPIELER ===== */
+/* ===== RESET ===== */
+function resetTournament() {
+  if (!confirm("Neues Turnier starten? Alle Daten werden gelöscht.")) return;
+
+  localStorage.removeItem("americanoState");
+  playerNames = [];
+  stats = {};
+  scoreInputs = {};
+
+  count.value = 8;
+  players.innerHTML = "";
+  plan.innerHTML = "";
+  ranking.innerHTML = "";
+
+  renderPlayers();
+}
+
+/* ===== PLAYER INPUTS ===== */
 function renderPlayers() {
   players.innerHTML = "";
-  for (let i = 0; i < count.value; i++) {
+  const c = parseInt(count.value);
+
+  for (let i = 0; i < c; i++) {
     const val = playerNames[i] || "";
     playerNames[i] = val;
+
     players.innerHTML += `
       <input value="${val}"
-        oninput="playerNames[${i}]=this.value; saveState();"
-        placeholder="Spieler ${i+1}">
+        placeholder="Spieler ${i+1}"
+        oninput="playerNames[${i}]=this.value; saveState();">
     `;
   }
   saveState();
 }
+
 count.onchange = renderPlayers;
 
-/* ===== SPIELPLAN ===== */
+/* ===== PLAN ===== */
 function createPlan() {
   plan.innerHTML = "";
   stats = {};
@@ -165,9 +264,10 @@ function createPlan() {
   const playersList = playerNames.filter(n => n.trim());
   playersList.forEach(p => stats[p] = { points:0, games:0 });
 
-  const rounds = players.length % 2 === 0
-  ? players.length - 1
-  : players.length;
+  const rounds = playersList.length % 2 === 0
+    ? playersList.length - 1
+    : playersList.length;
+
   let rotation = [...playersList];
 
   for (let r = 0; r < rounds; r++) {
@@ -184,12 +284,11 @@ function createPlan() {
       const A = [active[i], active[i+1]];
       const B = [active[i+2], active[i+3]];
 
-      const m = document.createElement("div");
-      m.className = "match";
-
       const idA = `r${r}-m${matchIndex}-A`;
       const idB = `r${r}-m${matchIndex}-B`;
 
+      const m = document.createElement("div");
+      m.className = "match";
       m.dataset.teamA = A.join("|");
       m.dataset.teamB = B.join("|");
 
@@ -212,32 +311,37 @@ function createPlan() {
     }
 
     plan.appendChild(round);
-    if (r % 2 === 1) {
-  rotation.sort(() => Math.random() - 0.5);
-} else {
-  rotation.splice(1, 0, rotation.pop());
-}
 
+    /* Rotation: stabil + Durchmischung */
+    if (r % 2 === 1) {
+      rotation.sort(() => Math.random() - 0.5);
+    } else {
+      rotation.splice(1, 0, rotation.pop());
+    }
   }
 
-  document.querySelectorAll(".score").forEach(inp =>
-    inp.addEventListener("input", saveState)
-  );
+  document.querySelectorAll(".score").forEach(inp => {
+    if (scoreInputs[inp.id] !== undefined) {
+      inp.value = scoreInputs[inp.id];
+    }
+    inp.addEventListener("input", saveState);
+  });
 
   saveState();
   updateRanking();
 }
 
-/* ===== AUSWERTUNG ===== */
+/* ===== CALC ===== */
 function calculate() {
   Object.values(stats).forEach(s => { s.points = 0; s.games = 0; });
 
   document.querySelectorAll(".match").forEach(m => {
     const A = m.dataset.teamA.split("|");
     const B = m.dataset.teamB.split("|");
+    const scores = m.querySelectorAll(".score");
 
-    const a = parseInt(m.querySelectorAll(".score")[0].value);
-    const b = parseInt(m.querySelectorAll(".score")[1].value);
+    const a = parseInt(scores[0].value);
+    const b = parseInt(scores[1].value);
 
     if (!isNaN(a)) A.forEach(p => { stats[p].points += a; stats[p].games++; });
     if (!isNaN(b)) B.forEach(p => { stats[p].points += b; stats[p].games++; });
@@ -258,9 +362,15 @@ function updateRanking() {
   rows.sort((a,b)=>b.ppg-a.ppg || b.points-a.points || a.name.localeCompare(b.name));
 
   ranking.innerHTML = `
-    <tr><th>Spieler</th><th>Spiele</th><th>Punkte</th><th>Punkte/Spiel</th></tr>
+    <tr>
+      <th>Spieler</th>
+      <th>Spiele</th>
+      <th>Punkte</th>
+      <th>Punkte / Spiel</th>
+    </tr>
   `;
-  rows.forEach(r=>{
+
+  rows.forEach(r => {
     ranking.innerHTML += `
       <tr>
         <td>${r.name}</td>
@@ -272,12 +382,12 @@ function updateRanking() {
   });
 }
 
-/* INIT */
+/* ===== INIT ===== */
 loadState();
 if (!count.value) {
   count.value = 8;
-  renderPlayers();
 }
+renderPlayers();
 </script>
 
 </body>
