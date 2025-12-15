@@ -165,7 +165,9 @@ function createPlan() {
   const playersList = playerNames.filter(n => n.trim());
   playersList.forEach(p => stats[p] = { points:0, games:0 });
 
-  const rounds = playersList.length - 1;
+  const rounds = players.length % 2 === 0
+  ? players.length - 1
+  : players.length;
   let rotation = [...playersList];
 
   for (let r = 0; r < rounds; r++) {
