@@ -1,195 +1,3 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Americano Vorlage – Padelzone</title>
-
-<style>
-* { box-sizing: border-box; }
-
-body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI";
-  background:#f5f5f7;
-  margin:0;
-  font-size:16px;
-}
-
-/* ===== HEADER ===== */
-.header {
-  background:#f59e0b;
-  padding:16px 22px;
-}
-.header h1 {
-  margin:0;
-  font-size:28px;
-  color:white;
-}
-.header p {
-  margin:6px 0 0;
-  font-size:16px;
-  color:white;
-  opacity:.95;
-}
-
-/* ===== CONTENT ===== */
-.content {
-  padding:22px;
-  max-width:1200px;
-  margin:auto;
-}
-
-.section {
-  background:white;
-  border-radius:16px;
-  padding:20px;
-  margin-bottom:24px;
-}
-
-label {
-  display:block;
-  margin-bottom:10px;
-  font-weight:500;
-}
-
-/* ===== INPUTS ===== */
-input {
-  width:100%;
-  padding:12px;
-  font-size:16px;
-  border-radius:10px;
-  border:1px solid #ccc;
-}
-
-/* ===== COUNT + TRASH ===== */
-.count-row {
-  display:flex;
-  align-items:center;
-  gap:12px;
-  margin-bottom:26px;
-}
-
-#count {
-  max-width:90px;
-}
-
-/* Apple-like Trash Button */
-.trash {
-  width:44px;
-  height:44px;
-  border-radius:12px;
-  border:1px solid #ddd;
-  background:#f5f5f7;
-  font-size:20px;
-  cursor:pointer;
-}
-.trash:hover {
-  background:#ffe4e4;
-  border-color:#ffb3b3;
-}
-
-/* ===== BUTTONS ===== */
-button.primary {
-  width:100%;
-  padding:14px;
-  font-size:17px;
-  background:#1d1d1f;
-  color:white;
-  border:none;
-  border-radius:12px;
-  margin-top:16px;
-  cursor:pointer;
-}
-
-/* ===== PLAYER GRID ===== */
-.grid {
-  display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:12px;
-}
-
-/* ===== MATCHES ===== */
-.match {
-  display:grid;
-  grid-template-columns:1fr 56px 24px 56px 1fr;
-  align-items:center;
-  text-align:center;
-  gap:10px;
-  margin-top:14px;
-}
-
-.team { font-weight:500; }
-
-.pause {
-  margin-top:12px;
-  font-size:15px;
-  font-style:italic;
-  color:#666;
-}
-
-/* ===== TABLE ===== */
-table {
-  width:100%;
-  border-collapse:collapse;
-}
-th, td {
-  padding:10px;
-  border-bottom:1px solid #ddd;
-  text-align:left;
-}
-
-/* ===== MOBILE ===== */
-@media (max-width:600px){
-  body { font-size:17px; }
-  input { font-size:17px; }
-  button.primary { font-size:18px; padding:16px; }
-}
-</style>
-</head>
-
-<body>
-
-<div class="header">
-  <h1>Americano Vorlage</h1>
-  <p>Padelzone – Felix Nikolas Bauernfeind</p>
-</div>
-
-<div class="content">
-
-  <div class="section">
-    <label>Anzahl Spieler</label>
-
-    <div class="count-row">
-  <input type="number" id="count" min="4">
-  <div style="flex:1"></div>
-  <button class="trash" onclick="resetTournament()" title="Neues Turnier">
-    🗑
-  </button>
-</div>
-
-
-    <div class="grid" id="players"></div>
-
-    <button class="primary" onclick="createPlan()">
-      Spielplan erstellen
-    </button>
-  </div>
-
-  <div id="plan"></div>
-
-  <div class="section">
-    <button class="primary" onclick="calculate()">
-      🔢 Ergebnisse berechnen
-    </button>
-  </div>
-
-  <div class="section">
-    <h2>Rangliste</h2>
-    <table id="ranking"></table>
-  </div>
-
-</div>
-
 <script>
 let playerNames = [];
 let stats = {};
@@ -216,24 +24,19 @@ function loadState() {
   count.value = s.count || 8;
   playerNames = s.playerNames || [];
   scoreInputs = s.scoreInputs || {};
-
   renderPlayers();
 }
 
 /* ===== RESET ===== */
 function resetTournament() {
-  if (!confirm("Neues Turnier starten? Alle Daten werden gelöscht.")) return;
-
+  if (!confirm("Neues Turnier starten?")) return;
   localStorage.removeItem("americanoState");
   playerNames = [];
   stats = {};
   scoreInputs = {};
-
-  count.value = 8;
-  players.innerHTML = "";
   plan.innerHTML = "";
   ranking.innerHTML = "";
-
+  count.value = 8;
   renderPlayers();
 }
 
@@ -249,7 +52,7 @@ function renderPlayers() {
     players.innerHTML += `
       <input value="${val}"
         placeholder="Spieler ${i+1}"
-        oninput="playerNames[${i}]=this.value; saveState();">
+        oninput="playerNames[${i}] = this.value; saveState();">
     `;
   }
   saveState();
@@ -257,7 +60,10 @@ function renderPlayers() {
 
 count.onchange = renderPlayers;
 
-/* ===== PLAN ===== */
+/* ===================================================== */
+/* =============== AMERICANO LOGIK ===================== */
+/* ===================================================== */
+
 function createPlan() {
   plan.innerHTML = "";
   stats = {};
@@ -265,83 +71,157 @@ function createPlan() {
 
   const playersList = playerNames.filter(n => n.trim());
   const n = playersList.length;
-
   if (n < 4) return;
 
   playersList.forEach(p => stats[p] = { points: 0, games: 0 });
 
-  const rounds = n; // faire Rotation
+  /* ===== FALL 1: PERFEKT (n % 4 === 0) ===== */
+  if (n % 4 === 0) {
+    createPerfectAmericano(playersList);
+    finalize();
+    return;
+  }
 
-  // Startreihenfolge
-  let rotation = [...playersList];
+  /* ===== FALL 2: GENAU 1 PAUSE (n % 4 === 1) ===== */
+  if (n % 4 === 1) {
+    createSinglePauseAmericano(playersList);
+    finalize();
+    return;
+  }
+
+  /* ===== FALL 3: ANNÄHERUNG (n % 4 === 2 oder 3) ===== */
+  createFairApproxAmericano(playersList);
+  finalize();
+}
+
+/* ===== PERFEKTER AMERICANO ===== */
+function createPerfectAmericano(players) {
+  const rounds = players.length - 1;
+  let rotation = [...players];
 
   for (let r = 0; r < rounds; r++) {
-    const round = document.createElement("div");
-    round.className = "section";
-    round.innerHTML = `<strong>Runde ${r + 1}</strong>`;
+    const round = section(`Runde ${r + 1}`);
 
-    // 👉 wie viele können spielen
-    const playableCount = Math.floor(rotation.length / 4) * 4;
-
-    // aktive & Pause
-    const active = rotation.slice(0, playableCount);
-    const pause = rotation.slice(playableCount);
-
-    // mischen für Partnerwechsel
-    const shuffled = [...active].sort(() => Math.random() - 0.5);
-
-    let matchIndex = 0;
-
-    for (let i = 0; i < shuffled.length; i += 4) {
-      const A = [shuffled[i], shuffled[i + 1]];
-      const B = [shuffled[i + 2], shuffled[i + 3]];
-
-      const idA = `r${r}-m${matchIndex}-A`;
-      const idB = `r${r}-m${matchIndex}-B`;
-
-      const m = document.createElement("div");
-      m.className = "match";
-      m.dataset.teamA = A.join("|");
-      m.dataset.teamB = B.join("|");
-
-      m.innerHTML = `
-        <div class="team">${A.join(" & ")}</div>
-        <input class="score" id="${idA}" type="number">
-        <div>:</div>
-        <input class="score" id="${idB}" type="number">
-        <div class="team">${B.join(" & ")}</div>
-      `;
-
-      round.appendChild(m);
-      matchIndex++;
-    }
-
-    // 👉 ALLE Pausierenden anzeigen
-    if (pause.length) {
-      const p = document.createElement("div");
-      p.className = "pause";
-      p.textContent = `Pause: ${pause.join(", ")}`;
-      round.appendChild(p);
+    for (let i = 0; i < rotation.length; i += 4) {
+      renderMatch(round, r, i / 4,
+        [rotation[i], rotation[i + 1]],
+        [rotation[i + 2], rotation[i + 3]]
+      );
     }
 
     plan.appendChild(round);
 
-    // 🔁 Rotation für nächste Runde
+    const fixed = rotation[0];
+    const rest = rotation.slice(1);
+    rest.unshift(rest.pop());
+    rotation = [fixed, ...rest];
+  }
+}
+
+/* ===== 1 PAUSE PRO RUNDE ===== */
+function createSinglePauseAmericano(players) {
+  const n = players.length;
+  const rounds = n;
+  let rotation = [...players];
+
+  for (let r = 0; r < rounds; r++) {
+    const round = section(`Runde ${r + 1}`);
+
+    const pause = rotation[0];
+    const active = rotation.slice(1);
+
+    for (let i = 0; i < active.length; i += 4) {
+      renderMatch(round, r, i / 4,
+        [active[i], active[i + 1]],
+        [active[i + 2], active[i + 3]]
+      );
+    }
+
+    pauseLine(round, [pause]);
+    plan.appendChild(round);
+
     rotation.push(rotation.shift());
   }
+}
 
+/* ===== FAIRE ANNÄHERUNG ===== */
+function createFairApproxAmericano(players) {
+  const rounds = players.length;
+  let rotation = [...players];
+
+  for (let r = 0; r < rounds; r++) {
+    const round = section(`Runde ${r + 1}`);
+
+    const playable = Math.floor(rotation.length / 4) * 4;
+    const active = rotation.slice(0, playable);
+    const pause = rotation.slice(playable);
+
+    // leichte Durchmischung erlaubt (Perfektion unmöglich)
+    active.sort(() => Math.random() - 0.5);
+
+    for (let i = 0; i < active.length; i += 4) {
+      renderMatch(round, r, i / 4,
+        [active[i], active[i + 1]],
+        [active[i + 2], active[i + 3]]
+      );
+    }
+
+    pauseLine(round, pause);
+    plan.appendChild(round);
+
+    rotation.push(rotation.shift());
+  }
+}
+
+/* ===================================================== */
+/* ================= RENDER HELPERS ==================== */
+/* ===================================================== */
+
+function section(title) {
+  const s = document.createElement("div");
+  s.className = "section";
+  s.innerHTML = `<strong>${title}</strong>`;
+  return s;
+}
+
+function renderMatch(round, r, m, A, B) {
+  const idA = `r${r}-m${m}-A`;
+  const idB = `r${r}-m${m}-B`;
+
+  const div = document.createElement("div");
+  div.className = "match";
+  div.dataset.teamA = A.join("|");
+  div.dataset.teamB = B.join("|");
+
+  div.innerHTML = `
+    <div class="team">${A.join(" & ")}</div>
+    <input class="score" id="${idA}" type="number">
+    <div>:</div>
+    <input class="score" id="${idB}" type="number">
+    <div class="team">${B.join(" & ")}</div>
+  `;
+
+  round.appendChild(div);
+}
+
+function pauseLine(round, list) {
+  if (!list.length) return;
+  const p = document.createElement("div");
+  p.className = "pause";
+  p.textContent = `Pause: ${list.join(", ")}`;
+  round.appendChild(p);
+}
+
+function finalize() {
   document.querySelectorAll(".score").forEach(inp => {
     if (scoreInputs[inp.id] !== undefined) {
       inp.value = scoreInputs[inp.id];
     }
     inp.addEventListener("input", saveState);
   });
-
   saveState();
   updateRanking();
 }
-
-
 
 /* ===== CALC ===== */
 function calculate() {
@@ -371,15 +251,10 @@ function updateRanking() {
     ppg:(s.games ? s.points/s.games : 0).toFixed(2)
   }));
 
-  rows.sort((a,b)=>b.ppg-a.ppg || b.points-a.points || a.name.localeCompare(b.name));
+  rows.sort((a,b)=>b.ppg-a.ppg || b.points-a.points);
 
   ranking.innerHTML = `
-    <tr>
-      <th>Spieler</th>
-      <th>Spiele</th>
-      <th>Punkte</th>
-      <th>Punkte / Spiel</th>
-    </tr>
+    <tr><th>Spieler</th><th>Spiele</th><th>Punkte</th><th>Punkte / Spiel</th></tr>
   `;
 
   rows.forEach(r => {
@@ -396,11 +271,6 @@ function updateRanking() {
 
 /* ===== INIT ===== */
 loadState();
-if (!count.value) {
-  count.value = 8;
-}
+if (!count.value) count.value = 8;
 renderPlayers();
 </script>
-
-</body>
-</html>
